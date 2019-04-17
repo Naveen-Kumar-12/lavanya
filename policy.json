@@ -1,0 +1,90 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "",
+    "Metadata": {
+
+    },
+    "Parameters": {
+      "IAMname":
+      {
+        "Type": "String",
+        "Description": "provide the umique name to the role"
+      }
+  },
+    "Mappings": {
+
+    },
+    "Conditions": {
+
+    },
+    "Resources": {
+      "lambdafunction": {
+        "Type": "AWS::Lambda::Function",
+        "Properties": {
+          "Role": {
+						"Fn::GetAtt": ["LamdaRole", "Arn"]
+					},
+          "FunctionName": "listallec2",
+					"Handler": "index.handler",
+					"Runtime": "nodejs8.10",
+          "Code": {
+            "S3Bucket": "mybrbucket123",
+            "S3Key": "lambdajs.zip"
+          }
+        }
+      },
+      "LamdaRole": {
+        "Type": "AWS::IAM::Role",
+        "Description": "the lamda execution role",
+        "Properties": {
+          "RoleName": {
+            "Ref": "IAMname"
+          },
+          "AssumeRolePolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+              }
+            ]
+          },
+          "Policies": [
+            {
+              "PolicyName": "root",
+              "PolicyDocument":
+              {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Sid": "Stmt1555481947922",
+                    "Action": [
+                      "ec2:DescribeInstances"
+                    ],
+                    "Effect": "Allow",
+                    "Resource": "*"
+                  },
+                  {
+                    "Sid": "Stmt1555481987555",
+                    "Action": "logs:*",
+                    "Effect": "Allow",
+                    "Resource": "*"
+                  }
+                ]
+              }
+            }]
+        }
+      }
+    },
+
+
+
+
+
+  "Outputs": {
+
+  }
+}
