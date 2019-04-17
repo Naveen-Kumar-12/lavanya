@@ -1,0 +1,139 @@
+{
+	"AWSTemplateFormatVersion": "2010-09-09",
+	"Description": "list ec2 permission role with lamda",
+	"Parameters": {
+		"IAMname": {
+			"Type": "String",
+			"Description": "provide the umique name to the role"
+		},
+		"lamdaname": {
+			"Type": "String",
+			"Description": "provide the name to lamdafunction"
+		},
+		"ResorceType": {
+			"Description": "The resource should created by freshers",
+			"Default": "freshers",
+			"Type": "String",
+			"AllowedValues": ["Experianced", "freshers"],
+			"ConstraintDescription": "must specify Experianced or freshers."
+
+		}
+
+		},
+        
+		"Conditions": {
+			"CreateResources": {
+				"Fn::Equals": [{"Ref": "ResorceType"}, "freshers"]
+            }
+			},
+
+		"Resources": {
+			"FirstLamda": {
+				"Type": "AWS::Lambda::Function",
+				"Condition": "CreateResources",
+				"Properties": {
+					"Role": {
+						"Fn::GetAtt": ["LamdaRole", "Arn"]
+					},
+					"FunctionName": "listallec2",
+					"Handler": "index.handler",
+					"Runtime": "nodejs8.10",
+					"Code": {
+						"S3Bucket": "test-bucket-naveen-code",
+						"S3Key": "lamdalistec2.zip"
+
+					}
+				}
+			},
+			"Dynamodb":{
+						"Type" : "AWS::DynamoDB::Table",
+						"Properties" : {
+							"AttributeDefinitions" : [{
+                                         "AttributeName" : "IstanceId",
+										  "AttributeType" : "S"
+							           },
+									   {
+										   "AttributeName" : "PrivateIpAddress",
+										  "AttributeType" : "S"
+									   }],
+							"KeySchema" :[{
+										"AttributeName": "IstanceId",
+										"KeyType": "HASH"
+									},{
+									"AttributeName": "PrivateIpAddress",
+										"KeyType": "RANGE"
+							         }],
+									 "ProvisionedThroughput": {
+												"ReadCapacityUnits": "5", 
+												"WriteCapacityUnits":"5"
+                                     },
+							  "TableName":"listallresource"
+
+			}
+			},
+
+			"LamdaRole": {
+				"Type": "AWS::IAM::Role",
+				"Description": "the lamda execution role",
+				"Properties": {
+					"RoleName": {
+						"Ref": "IAMname"
+					},
+					"AssumeRolePolicyDocument": {
+						"Version": "2012-10-17",
+						"Statement": [{
+							"Effect": "Allow",
+							"Principal": {
+								"Service": "lambda.amazonaws.com"
+							},
+							"Action": "sts:AssumeRole"
+						}]
+					},
+					"Policies": [{
+						"PolicyName": "root",
+						"PolicyDocument": {
+							"Version": "2012-10-17",
+									"Statement": [
+										{
+										"Sid": "Stmt1555398945608",
+										"Action": [
+											"dynamodb:DescribeTable",
+											"dynamodb:GetRecords",
+											"dynamodb:ListTables",
+											"dynamodb:PutItem",
+											"dynamodb:UpdateTable"
+										],
+										"Effect": "Allow",
+										"Resource": "*"
+										},
+										{
+										"Sid": "Stmt1555399215870",
+										"Action": [
+											"ec2:DescribeInstances"
+										],
+										"Effect": "Allow",
+										"Resource": "*"
+										}
+				  			       ]
+						}
+
+					}]
+
+
+				}
+
+			}
+		},
+		"Outputs": {
+			"LamdaArn": {
+				"Description": "Returning lamda ARN",
+				"Value": {
+					"Fn::GetAtt": ["FirstLamda", "Arn"]
+				},
+				"Condition": "CreateResources"
+
+			}
+		}
+	
+}
+
